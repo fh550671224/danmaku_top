@@ -10,7 +10,7 @@ class RedisClient():
         if cls._instance is None:
             cls._instance = super(RedisClient, cls).__new__(cls, *args, **kwargs)
             try:
-                cls._instance.redis_connection = redis.Redis(host='localhost', port=6379)
+                cls._instance.redis_connection = redis.Redis(host='my_redis', port=6379)
                 cls._instance.redis_connection.ping()
                 print("Redis Connected")
             except Exception as e:

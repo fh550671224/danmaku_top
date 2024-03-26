@@ -1,6 +1,6 @@
 version: '3'
 services:
-  redis:
+  my_redis:
     image: redis
     volumes:
       - "/redis_data"
