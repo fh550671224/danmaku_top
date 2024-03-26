@@ -10,7 +10,7 @@ services:
       - my-network
 
   danmaku_top:
-    image: danmaku_top
+    image: richard1227/danmaku_top
     networks:
       - my-network
 
