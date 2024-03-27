@@ -33,4 +33,4 @@ if __name__ == '__main__':
         value.start()
     redis = RedisClient()
     redis.start_cronjob()
-    app.run(debug=True)
+    app.run(host='0.0.0.0',debug=True)
