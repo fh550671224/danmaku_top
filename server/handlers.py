@@ -1,14 +1,13 @@
 import sys
 import time
 
-from douyu.client import Client
 from cache.redis_client import RedisClient
 
 
 def chatmsg_handler(msg):
     try:
         redis = RedisClient()
-        redis.incr(msg['txt'])
+        redis.incr(msg['txt'], msg['rid'])
 
         output = time.strftime("[%Y-%m-%d %H:%M:%S] ", time.localtime()) + msg['nn'] + ": " + msg['txt']
         print(output)
@@ -16,10 +15,3 @@ def chatmsg_handler(msg):
     except Exception as e:
         print("chatmsg_handler failed. Exception: %s" % e)
 
-c = Client(room_id=74960)
-c.add_handler('chatmsg', chatmsg_handler)
-# c.add_handler('uenter', uenter_handler)
-# c.add_handler('newblackres', newblackres_handler)
-redis = RedisClient()
-redis.start()
-c.start()
