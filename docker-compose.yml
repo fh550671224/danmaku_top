@@ -26,7 +26,7 @@ services:
     ports:
       - "80:80"
     volumes:
-      - ./conf/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./conf/danmaku_top_nginx.conf:/etc/nginx/conf.d/danmaku_top_nginx.conf
     depends_on:
       - danmaku_top
     networks:
