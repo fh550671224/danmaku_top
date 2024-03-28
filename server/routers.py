@@ -1,5 +1,6 @@
 import json
 
+from config_handler.config_handler import ConfigHandler
 from storage.mongo_client import MongoClient
 from storage.redis_client import RedisClient
 from flask import Flask, request
@@ -9,6 +10,20 @@ from .handlers import chatmsg_handler
 
 app = Flask(__name__)
 
+@app.before_first_request
+def initialize():
+    config = ConfigHandler()
+
+    redis = RedisClient()
+    redis.start_cronjob()
+
+    mongo = MongoClient()
+
+    room_list = mongo.get_rooms()
+    cm = ClientManager(room_list)
+    for key, value in cm.room_clients_map.items():
+        value.add_handler('chatmsg', chatmsg_handler)
+        value.start()
 
 @app.route('/')
 def home():
