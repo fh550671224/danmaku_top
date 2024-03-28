@@ -26,4 +26,5 @@ if __name__ == '__main__':
         value.add_handler('chatmsg', chatmsg_handler)
         value.start()
 
-    app.run(host='0.0.0.0')
+    if config.is_local_dev():
+        app.run(host='0.0.0.0')
