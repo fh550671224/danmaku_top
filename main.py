@@ -50,4 +50,5 @@ if __name__ == '__main__':
         value.add_handler('chatmsg', chatmsg_handler)
         value.start()
 
+    register_routers(_app)
     _app.run(host='0.0.0.0')
