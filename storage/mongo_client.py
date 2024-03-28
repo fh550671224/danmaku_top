@@ -51,3 +51,27 @@ class MongoClient:
             col.delete_many(query)
         except Exception as e:
             print(f'mongo delete_by_text_list Error: {e}')
+
+    def get_rooms(self):
+        col = self.get_client()['danmaku_rooms']
+        try:
+            query = {'name': 'room_list'}
+            data = col.find_one(query)
+            if data is None:
+                return []
+            else:
+                rooms = data['rooms']
+                return rooms
+        except Exception as e:
+            print(f'mongo get_rooms Error: {e}')
+
+    def add_room(self, room):
+        col = self.get_client()['danmaku_rooms']
+        try:
+            data = col.find_one({'name': 'room_list'})
+            if data is None:
+                col.insert_one({'name': 'room_list', 'rooms': [room]})
+            else:
+                col.update_one({'name': 'room_list'}, {'$push': {'rooms': room}})
+        except Exception as e:
+            print(f'mongo add_room Error: {e}')
