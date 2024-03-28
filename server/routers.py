@@ -1,5 +1,6 @@
 import json
 
+from storage.mongo_client import MongoClient
 from storage.redis_client import RedisClient
 from flask import Flask, request
 
@@ -32,7 +33,7 @@ def get_danmaku_top_by_room_id(room_id):
         topn = 10
     rc = RedisClient()
     topn_danmakus = rc.get_room_topn(room_id=room_id, topn=topn)
-    return topn_danmakus, 200, {'Content-Type': ''}
+    return topn_danmakus, 200, {'Content-Type': 'application/json'}
 
 
 @app.route('/danmaku_top', methods=['POST'])
@@ -45,3 +46,17 @@ def add_danmaku_top_room():
     c.add_handler('chatmsg', chatmsg_handler)
     c.start()
     return {'msg': 'ok'}, 200, {'Content-Type': ''}
+
+
+@app.route('/danmaku_info', methods=['GET'])
+def get_danmaku_info():
+    text = request.args.get('text')
+    if text is None:
+        return {'msg': 'please provide text'}, 200, {'Content-Type': 'application/json'}
+    mongo = MongoClient()
+    data = mongo.find_one_by_text('danmaku_info', text)
+    if data is not None:
+        return data, 200, {'Content-Type': 'application/json'}
+    else:
+        return {'msg': 'text not found'}, 200, {'Content-Type': 'application/json'}
+
