@@ -8,74 +8,56 @@ from flask import Flask, request
 from douyu.client_manager import ClientManager
 from .handlers import chatmsg_handler
 
-app = Flask(__name__)
+_app = Flask(__name__)
 
-@app.before_first_request
-def initialize():
-    config = ConfigHandler()
+def register_routers(app):
+    @app.route('/')
+    def home():
+        return 'Hello, Flask!'
 
-    redis = RedisClient()
-    redis.start_cronjob()
+    @app.route('/danmaku_top', methods=['GET'])
+    def get_danmaku_top():
+        mc = MongoClient()
+        room_list = mc.get_rooms()
+        if len(room_list) == 0:
+            return 'Nothing yet'
+        else:
+            return room_list, 200, {'Content-Type': 'application/json'}  # 返回JSON响应
 
-    mongo = MongoClient()
+    @app.route('/danmaku_top/<room_id>', methods=['GET'])
+    def get_danmaku_top_by_room_id(room_id):
+        topn = request.args.get('n')
+        if topn is None:
+            topn = 10
+        rc = RedisClient()
+        topn_danmakus = rc.get_room_topn(room_id=room_id, topn=topn)
+        return topn_danmakus, 200, {'Content-Type': 'application/json'}
 
-    room_list = mongo.get_rooms()
-    cm = ClientManager(room_list)
-    for key, value in cm.room_clients_map.items():
-        value.add_handler('chatmsg', chatmsg_handler)
-        value.start()
+    @app.route('/danmaku_top', methods=['POST'])
+    def add_danmaku_top_room():
+        data = request.get_json()
+        room_id = data['room_id']
 
-@app.route('/')
-def home():
-    return 'Hello, Flask!'
+        mc = MongoClient()
+        mc.add_room(room_id)
 
+        cm = ClientManager([])
+        cm.add_room(room_id)
+        c = cm.room_clients_map[room_id]
+        c.add_handler('chatmsg', chatmsg_handler)
+        c.start()
+        return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
-@app.route('/danmaku_top', methods=['GET'])
-def get_danmaku_top():
-    mc = MongoClient()
-    room_list = mc.get_rooms()
-    if len(room_list) == 0:
-        return 'Nothing yet'
-    else:
-        return room_list, 200, {'Content-Type': 'application/json'}  # 返回JSON响应
-
-
-@app.route('/danmaku_top/<room_id>', methods=['GET'])
-def get_danmaku_top_by_room_id(room_id):
-    topn = request.args.get('n')
-    if topn is None:
-        topn = 10
-    rc = RedisClient()
-    topn_danmakus = rc.get_room_topn(room_id=room_id, topn=topn)
-    return topn_danmakus, 200, {'Content-Type': 'application/json'}
-
-
-@app.route('/danmaku_top', methods=['POST'])
-def add_danmaku_top_room():
-    data = request.get_json()
-    room_id = data['room_id']
-
-    mc = MongoClient()
-    mc.add_room(room_id)
-
-    cm = ClientManager([])
-    cm.add_room(room_id)
-    c = cm.room_clients_map[room_id]
-    c.add_handler('chatmsg', chatmsg_handler)
-    c.start()
-    return {'msg': 'ok'}, 200, {'Content-Type': ''}
-
-
-@app.route('/danmaku_info', methods=['GET'])
-def get_danmaku_info():
-    text = request.args.get('text')
-    if text is None:
-        return {'msg': 'please provide text'}, 200, {'Content-Type': 'application/json'}
-    mongo = MongoClient()
-    data = mongo.find_one_by_text('danmaku_info', text)
-    if data is not None:
-        data.pop('_id', None)
-        return data, 200, {'Content-Type': 'application/json'}
-    else:
-        return {'msg': 'text not found'}, 200, {'Content-Type': 'application/json'}
+    @app.route('/danmaku_info', methods=['GET'])
+    def get_danmaku_info():
+        text = request.args.get('text')
+        if text is None:
+            return {'msg': 'please provide text'}, 200, {'Content-Type': 'application/json'}
+        mongo = MongoClient()
+        data = mongo.find_one_by_text('danmaku_info', text)
+        if data is not None:
+            data.pop('_id', None)
+            return data, 200, {'Content-Type': 'application/json'}
+        else:
+            return {'msg': 'text not found'}, 200, {'Content-Type': 'application/json'}
 
