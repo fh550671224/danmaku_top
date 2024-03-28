@@ -27,12 +27,12 @@ def get_room_ids():
 
 
 if __name__ == '__main__':
+    redis = RedisClient()
+    redis.start_cronjob()
+    mongo = MongoClient()
     room_list = get_room_ids()
     cm = ClientManager(room_list)
     for key, value in cm.room_clients_map.items():
         value.add_handler('chatmsg', chatmsg_handler)
         value.start()
-    redis = RedisClient()
-    redis.start_cronjob()
-    mongo = MongoClient()
-    app.run(host='0.0.0.0',debug=True)
+    app.run(host='0.0.0.0')

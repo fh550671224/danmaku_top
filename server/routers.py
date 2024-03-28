@@ -56,6 +56,7 @@ def get_danmaku_info():
     mongo = MongoClient()
     data = mongo.find_one_by_text('danmaku_info', text)
     if data is not None:
+        data.pop('_id', None)
         return data, 200, {'Content-Type': 'application/json'}
     else:
         return {'msg': 'text not found'}, 200, {'Content-Type': 'application/json'}
