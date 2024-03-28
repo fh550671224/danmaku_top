@@ -4,9 +4,21 @@ services:
     image: redis
     container_name: my_redis
     volumes:
-      - "/redis_data"
+      - ./redis.conf:/usr/local/etc/redis/redis.conf
+      - redis_data:/data
+    command: redis-server /usr/local/etc/redis/redis.conf
     ports:
       - "6379:6379"
+    networks:
+      - my-network
+
+  my_mongo:
+    image: mongo
+    container_name: my_mongo
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo_data:/data/db
     networks:
       - my-network
 
@@ -34,3 +46,9 @@ services:
 
 networks:
   my-network:
+
+volumes:
+  mongo_data:
+    driver: local
+  redis_data:
+    driver: local

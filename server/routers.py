@@ -1,12 +1,14 @@
 import json
 
-from cache.redis_client import RedisClient
+from storage.redis_client import RedisClient
 from flask import Flask, request
 
 from douyu.client_manager import ClientManager
 from .handlers import chatmsg_handler
 
 app = Flask(__name__)
+
+
 @app.route('/')
 def home():
     return 'Hello, Flask!'
@@ -29,7 +31,7 @@ def get_danmaku_top_by_room_id(room_id):
     if topn is None:
         topn = 10
     rc = RedisClient()
-    topn_danmakus = rc.get_room_topns(room_id=room_id, topn=topn)
+    topn_danmakus = rc.get_room_topn(room_id=room_id, topn=topn)
     return topn_danmakus, 200, {'Content-Type': ''}
 
 

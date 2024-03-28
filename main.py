@@ -3,7 +3,8 @@ import sys
 import time
 
 from douyu.client import Client
-from cache.redis_client import RedisClient
+from storage.mongo_client import MongoClient
+from storage.redis_client import RedisClient
 from flask import Flask, request
 
 from douyu.client_manager import ClientManager
@@ -33,4 +34,5 @@ if __name__ == '__main__':
         value.start()
     redis = RedisClient()
     redis.start_cronjob()
+    mongo = MongoClient()
     app.run(host='0.0.0.0',debug=True)
