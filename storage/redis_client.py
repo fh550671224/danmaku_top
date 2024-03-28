@@ -75,7 +75,7 @@ class RedisClient():
 
                 # delete in mongo
                 mongo = MongoClient()
-                mongo.delete_by_text_list(value_list)
+                mongo.delete_by_text_list('danmaku_info', value_list)
             except Exception as e:
                 print(f'Cleared Error: {e}')
 
