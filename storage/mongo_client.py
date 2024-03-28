@@ -9,8 +9,8 @@ class MongoClient:
             cls._instance = super(MongoClient, cls).__new__(cls, *args, **kwargs)
             try:
                 # TODO debug only
-                cls._instance.mongo_client = pymongo.MongoClient('localhost', 27017)
-                # cls._instance.mongo_client = pymongo.MongoClient('my_mongo', 27017)
+                # cls._instance.mongo_client = pymongo.MongoClient('localhost', 27017)
+                cls._instance.mongo_client = pymongo.MongoClient('my_mongo', 27017)
                 db = cls._instance.mongo_client.admin
                 resp = db.command('ping')
                 print(f"mongo Connected. {resp}")
