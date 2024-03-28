@@ -3,6 +3,7 @@ import time
 
 import redis
 
+from config_handler.config_handler import ConfigHandler
 from storage.mongo_client import MongoClient
 
 
@@ -14,8 +15,11 @@ class RedisClient():
             cls._instance = super(RedisClient, cls).__new__(cls, *args, **kwargs)
             try:
                 # TODO debug only
-                # cls._instance.redis_connection = redis.Redis(host='localhost', port=6379, decode_responses=True)
-                cls._instance.redis_connection = redis.Redis(host='my_redis', port=6379, decode_responses=True)
+                config = ConfigHandler()
+                if config.is_local_dev():
+                    cls._instance.redis_connection = redis.Redis(host='localhost', port=6379, decode_responses=True)
+                else:
+                    cls._instance.redis_connection = redis.Redis(host='my_redis', port=6379, decode_responses=True)
                 cls._instance.redis_connection.ping()
                 print("Redis Connected")
             except Exception as e:

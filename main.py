@@ -2,6 +2,7 @@ import json
 import sys
 import time
 
+from config_handler.config_handler import ConfigHandler
 from douyu.client import Client
 from storage.mongo_client import MongoClient
 from storage.redis_client import RedisClient
@@ -27,6 +28,7 @@ def get_room_ids():
 
 
 if __name__ == '__main__':
+    config = ConfigHandler()
     redis = RedisClient()
     redis.start_cronjob()
     mongo = MongoClient()
