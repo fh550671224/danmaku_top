@@ -1,5 +1,6 @@
 import pymongo
 
+from shared.constants import Constants
 from config_handler.config_handler import ConfigHandler
 
 
@@ -37,6 +38,14 @@ class MongoClient:
         except Exception as e:
             print(f'mongo Insert Error: {e}')
 
+    def insert_many(self, collection, value_list):
+        col = self.get_client()[collection]
+        try:
+            col.insert_many(value_list)
+            print(f'mongo Insert mongo.{collection} Successful: {len(value_list)}')
+        except Exception as e:
+            print(f'mongo insert_many Error: {e}')
+
     def find_one_by_text(self, collection, text):
         col = self.get_client()[collection]
         try:
@@ -44,13 +53,25 @@ class MongoClient:
         except Exception as e:
             print(f'mongo find_one_by_text Error: {e}')
 
-    def delete_by_text_list(self, collection, text_list):
+    def find_many(self, collection, room_id, skip_docs, page_size):
         col = self.get_client()[collection]
         try:
-            query = {'text': {'$in': text_list}}
-            col.delete_many(query)
+            query = {'room_id': room_id}
+            return col.find(query).skip(skip_docs).limit(page_size)
         except Exception as e:
-            print(f'mongo delete_by_text_list Error: {e}')
+            print(f'mongo find_many Error: {e}')
+
+    def archive_danmaku_info(self, text_list):
+        col_danmaku_info = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
+        col_common_danmaku = self.get_client()[Constants.MONGO_COL_COMMON_DAMNAKU]
+        try:
+            query = {'text': {'$in': text_list}}
+            docs = col_danmaku_info.find(query)
+            col_danmaku_info.delete_many(query)
+            col_common_danmaku.insert_many(docs)
+            print(f'archived {len(text_list)} danmakus')
+        except Exception as e:
+            print(f'mongo archive_danmaku_info Error: {e}')
 
     def get_rooms(self):
         col = self.get_client()['danmaku_rooms']
@@ -75,3 +96,10 @@ class MongoClient:
                 col.update_one({'name': 'room_list'}, {'$push': {'rooms': room}})
         except Exception as e:
             print(f'mongo add_room Error: {e}')
+
+    def get_col_count(self, collection):
+        col = self.get_client()[collection]
+        try:
+            return col.count_documents({})
+        except Exception as e:
+            print(f'mongo get_col_count Error: {e}')

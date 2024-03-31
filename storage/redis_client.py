@@ -4,6 +4,7 @@ import time
 import redis
 
 from config_handler.config_handler import ConfigHandler
+from shared.constants import Constants
 from storage.mongo_client import MongoClient
 
 
@@ -40,7 +41,7 @@ class RedisClient():
     def get_room_topn(self, room_id, topn):
         c = self.get_redis_connection()
         try:
-            return c.zrevrange(f'danmaku_ranking_{room_id}', 0, topn, withscores=True)
+            return c.zrevrange(f'{Constants.REDIS_DANMAKU_RANKING}_{room_id}', 0, topn, withscores=True)
         except Exception as e:
             print(f'Get Error: {e}')
 
@@ -48,7 +49,7 @@ class RedisClient():
         c = self.get_redis_connection()
         try:
             pipe = c.pipeline(transaction=True)
-            pipe.zincrby(f'danmaku_ranking_{room_id}', 1, keyword)
+            pipe.zincrby(f'{Constants.REDIS_DANMAKU_RANKING}_{room_id}', 1, keyword)
             pipe.execute()
         except Exception as e:
             print(f'Set Error: {e}')
@@ -56,7 +57,7 @@ class RedisClient():
     def get_all_keys(self):
         c = self.get_redis_connection()
         try:
-            return c.keys('danmaku_ranking_*')
+            return c.keys(f'{Constants.REDIS_DANMAKU_RANKING}_*')
         except Exception as e:
             print(f'Get Error: {e}')
 
@@ -75,7 +76,8 @@ class RedisClient():
 
                 # delete in mongo
                 mongo = MongoClient()
-                mongo.delete_by_text_list('danmaku_info', value_list)
+                mongo.archive_danmaku_info(value_list)
+
             except Exception as e:
                 print(f'Cleared Error: {e}')
 
