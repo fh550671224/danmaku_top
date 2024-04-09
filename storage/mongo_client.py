@@ -66,10 +66,10 @@ class MongoClient:
         col_common_danmaku = self.get_client()[Constants.MONGO_COL_COMMON_DAMNAKU]
         try:
             query = {'text': {'$in': text_list}}
-            docs = col_danmaku_info.find(query)
+            docs = list(col_danmaku_info.find(query))
             col_danmaku_info.delete_many(query)
             col_common_danmaku.insert_many(docs)
-            print(f'archived {len(text_list)} danmakus')
+            print(f'archived {len(docs)} danmakus')
         except Exception as e:
             print(f'mongo archive_danmaku_info Error: {e}')
 

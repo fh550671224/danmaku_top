@@ -5,13 +5,14 @@ from config_handler.config_handler import ConfigHandler
 from storage.mongo_client import MongoClient
 from storage.redis_client import RedisClient
 from flask import Flask, request
+from flask_cors import CORS
 
 from shared.constants import Constants
 from douyu.client_manager import ClientManager
 from .handlers import chatmsg_handler
 
 _app = Flask(__name__)
-
+CORS(_app)
 
 def register_routers(app):
     @app.route('/')
@@ -22,10 +23,8 @@ def register_routers(app):
     def get_danmaku_top():
         mc = MongoClient()
         room_list = mc.get_rooms()
-        if len(room_list) == 0:
-            return 'Nothing yet'
-        else:
-            return room_list, 200, {'Content-Type': 'application/json'}  # 返回JSON响应
+        return {"data": room_list, "total": len(room_list), "msg": "ok"}, 200, {
+            'Content-Type': 'application/json'}  # 返回JSON响应
 
     @app.route('/danmaku_top/<room_id>', methods=['GET'])
     def get_danmaku_top_by_room_id(room_id):
