@@ -32,6 +32,16 @@ services:
     depends_on:
       - my_redis
 
+  danmaku_top_frontend:
+    image: richard1227/danmaku_top_frontend
+    container_name: danmaku_top_frontend
+    ports:
+      - "3000:3000"
+    networks:
+      - my-network
+    depends_on:
+      - danmaku_top
+
   my_nginx:
     image: nginx
     container_name: my_nginx
