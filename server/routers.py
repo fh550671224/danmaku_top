@@ -35,7 +35,7 @@ def register_routers(app):
         topn_danmakus = rc.get_room_topn(room_id=room_id, topn=topn)
         return topn_danmakus, 200, {'Content-Type': 'application/json'}
 
-    @app.route('/danmaku_top', methods=['POST'])
+    @app.route('/danmaku_top/rooms', methods=['POST'])
     def add_danmaku_top_room():
         data = request.get_json()
         room_id = data['room_id']
