@@ -19,7 +19,7 @@ def register_routers(app):
     def home():
         return 'Hello, Flask!'
 
-    @app.route('/danmaku_top', methods=['GET'])
+    @app.route('/danmaku_top/rooms', methods=['GET'])
     def get_danmaku_top():
         mc = MongoClient()
         room_list = mc.get_rooms()
