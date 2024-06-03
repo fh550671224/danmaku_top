@@ -19,14 +19,14 @@ def register_routers(app):
     def home():
         return 'Hello, Flask!'
 
-    @app.route('/danmaku_top/rooms', methods=['GET'])
+    @app.route('/api/rooms', methods=['GET'])
     def get_danmaku_top():
         mc = MongoClient()
         room_list = mc.get_rooms()
         return {"data": room_list, "total": len(room_list), "msg": "ok"}, 200, {
             'Content-Type': 'application/json'}  # 返回JSON响应
 
-    @app.route('/danmaku_top/<room_id>', methods=['GET'])
+    @app.route('/api/<room_id>', methods=['GET'])
     def get_danmaku_top_by_room_id(room_id):
         topn = request.args.get('n')
         if topn is None:
@@ -35,7 +35,7 @@ def register_routers(app):
         topn_danmakus = rc.get_room_topn(room_id=room_id, topn=topn)
         return topn_danmakus, 200, {'Content-Type': 'application/json'}
 
-    @app.route('/danmaku_top/rooms', methods=['POST'])
+    @app.route('/api/rooms', methods=['POST'])
     def add_danmaku_top_room():
         data = request.get_json()
         room_id = data['room_id']
@@ -50,7 +50,7 @@ def register_routers(app):
         c.start()
         return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
-    @app.route('/danmaku_info', methods=['GET'])
+    @app.route('/api/danmaku_info', methods=['GET'])
     def get_danmaku_info():
         text = request.args.get('text')
         page_size = request.args.get('page_size', type=int, default=20)
