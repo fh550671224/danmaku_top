@@ -75,8 +75,9 @@ class RedisClient():
                 pipe.execute()
 
                 # delete in mongo
-                mongo = MongoClient()
-                mongo.archive_danmaku_info(value_list)
+                if len(value_list) > 0:
+                    mongo = MongoClient()
+                    mongo.archive_danmaku_info(value_list)
 
             except Exception as e:
                 print(f'Cleared Error: {e}')
