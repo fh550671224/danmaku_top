@@ -49,6 +49,8 @@ services:
       - "80:80"
     volumes:
       - ./conf/danmaku_top_nginx.conf:/etc/nginx/conf.d/danmaku_top_nginx.conf
+      - ${CRT_PATH}:/etc/ssl/certs/nginx.crt
+      - ${KEY_PATH}:/etc/ssl/private/nginx.key
     depends_on:
       - danmaku_top
     networks:
