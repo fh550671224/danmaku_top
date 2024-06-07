@@ -47,6 +47,7 @@ services:
     container_name: my_nginx
     ports:
       - "80:80"
+      - "443:443"
     volumes:
       - ./conf/danmaku_top_nginx.conf:/etc/nginx/conf.d/danmaku_top_nginx.conf
       - ${CRT_PATH}:/etc/ssl/certs/nginx.crt
