@@ -26,7 +26,7 @@ def register_routers(app):
         return {"data": room_list, "total": len(room_list), "msg": "ok"}, 200, {
             'Content-Type': 'application/json'}  # 返回JSON响应
 
-    @app.route('/api/<room_id>', methods=['GET'])
+    @app.route('/api/top_danmaku/<room_id>', methods=['GET'])
     def get_danmaku_top_by_room_id(room_id):
         topn = request.args.get('n')
         if topn is None:
@@ -34,6 +34,25 @@ def register_routers(app):
         rc = RedisClient()
         topn_danmakus = rc.get_room_topn(room_id=room_id, topn=topn)
         return topn_danmakus, 200, {'Content-Type': 'application/json'}
+
+    @app.route('/api/common_danmaku/<room_id>', methods=['GET'])
+    def get_common_danmaku_by_room_id(room_id):
+        mc = MongoClient()
+        common_danmakus = []
+        docs = mc.find_many_with_room_id(Constants.MONGO_COL_COMMON_DAMNAKU,room_id)
+        for doc in docs:
+            doc.pop('_id', None)
+            common_danmakus.append(doc)
+
+        return common_danmakus, 200, {'Content-Type': 'application/json'}
+
+    @app.route('/api/danmaku', methods=['DELETE'])
+    def delete_danmaku():
+        text = request.args.get('text')
+        mc = MongoClient()
+        mc.delete_danmaku(Constants.MONGO_COL_COMMON_DAMNAKU,text)
+        return '', 200, {'Content-Type': 'application/json'}
+
 
     @app.route('/api/rooms', methods=['POST'])
     def add_danmaku_top_room():
@@ -80,3 +99,26 @@ def register_routers(app):
         count = mongo.get_col_count(col)
 
         return {"data": data, "total": count}, 200, {'Content-Type': 'application/json'}
+
+    @app.route('/api/archive_danmaku', methods=['POST'])
+    def archive_danmaku():
+        data = request.get_json()
+        text = data['text']
+        room_id = data['room_id']
+
+        if text is None or room_id is None:
+            return {'msg': 'please provide text and room_id'}, http.client.BAD_REQUEST, {
+                'Content-Type': 'application/json'}
+
+        rc = RedisClient()
+        rc.delete(text, room_id)
+
+        mongo = MongoClient()
+        doc = mongo.find_one_by_text(Constants.MONGO_COL_DANMAKU_INFO, text)
+        if doc is not None:
+            mongo.archive_danmaku_info([text])
+        else:
+            return {'msg': 'text not found'}, http.client.BAD_REQUEST, {
+                'Content-Type': 'application/json'}
+
+        return {'msg': 'ok'}, 200, {'Content-Type': ''}

@@ -54,6 +54,15 @@ class RedisClient():
         except Exception as e:
             print(f'Set Error: {e}')
 
+    def delete(self, keyword, room_id):
+        c = self.get_redis_connection()
+        try:
+            pipe = c.pipeline(transaction=True)
+            pipe.zrem(f'{Constants.REDIS_DANMAKU_RANKING}_{room_id}', keyword)
+            pipe.execute()
+        except Exception as e:
+            print(f'Delete Error: {e}')
+
     def get_all_keys(self):
         c = self.get_redis_connection()
         try:

@@ -61,14 +61,35 @@ class MongoClient:
         except Exception as e:
             print(f'mongo find_many Error: {e}')
 
+    def find_many_with_room_id(self, collection, room_id):
+        col = self.get_client()[collection]
+        try:
+            query = {'room_id': room_id}
+            docs = col.find(query)
+            return docs
+        except Exception as e:
+            print(f'mongo find_many Error: {e}')
+
     def archive_danmaku_info(self, text_list):
         col_danmaku_info = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
         col_common_danmaku = self.get_client()[Constants.MONGO_COL_COMMON_DAMNAKU]
         try:
+            existing_values = set(col_common_danmaku.distinct("text"))
+
             query = {'text': {'$in': text_list}}
             docs = list(col_danmaku_info.find(query))
             col_danmaku_info.delete_many(query)
-            col_common_danmaku.insert_many(docs)
+
+            # duplicate check
+            docs_to_insert = []
+            for doc in docs:
+                if doc["text"] in existing_values:
+                    continue
+                else:
+                    docs_to_insert.append(doc)
+
+            # archive
+            col_common_danmaku.insert_many(docs_to_insert)
             print(f'archived {len(docs)} danmakus')
         except Exception as e:
             print(f'mongo archive_danmaku_info Error: {e}')
@@ -103,3 +124,10 @@ class MongoClient:
             return col.count_documents({})
         except Exception as e:
             print(f'mongo get_col_count Error: {e}')
+
+    def delete_danmaku(self, collection, text):
+        col = self.get_client()[collection]
+        try:
+            return col.delete_one({'text': text})
+        except Exception as e:
+            print(f'mongo delete_danmaku Error: {e}')
