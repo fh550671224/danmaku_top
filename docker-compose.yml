@@ -15,8 +15,6 @@ services:
   my_mongo:
     image: mongo
     container_name: my_mongo
-    ports:
-      - "27017:27017"
     volumes:
       - mongo_data:/data/db
     networks:
@@ -25,8 +23,6 @@ services:
   danmaku_top:
     image: richard1227/danmaku_top
     container_name: danmaku_top
-    ports:
-      - "5000:5000"
     networks:
       - my-network
     depends_on:
