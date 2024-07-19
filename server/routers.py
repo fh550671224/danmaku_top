@@ -14,6 +14,7 @@ from .handlers import chatmsg_handler
 _app = Flask(__name__)
 CORS(_app)
 
+
 def register_routers(app):
     @app.route('/')
     def home():
@@ -26,99 +27,74 @@ def register_routers(app):
         return {"data": room_list, "total": len(room_list), "msg": "ok"}, 200, {
             'Content-Type': 'application/json'}  # 返回JSON响应
 
-    @app.route('/api/top_danmaku/<room_id>', methods=['GET'])
-    def get_danmaku_top_by_room_id(room_id):
+    @app.route('/api/danmaku/<room>', methods=['GET'])
+    def get_danmaku(room):
         topn = request.args.get('n')
-        if topn is None:
-            topn = 10
-        rc = RedisClient()
-        topn_danmakus = rc.get_room_topn(room_id=room_id, topn=topn)
-        return topn_danmakus, 200, {'Content-Type': 'application/json'}
-
-    @app.route('/api/common_danmaku/<room_id>', methods=['GET'])
-    def get_common_danmaku_by_room_id(room_id):
-        mc = MongoClient()
-        common_danmakus = []
-        docs = mc.find_many_with_room_id(Constants.MONGO_COL_COMMON_DAMNAKU,room_id)
-        for doc in docs:
-            doc.pop('_id', None)
-            common_danmakus.append(doc)
-
-        return common_danmakus, 200, {'Content-Type': 'application/json'}
-
-    @app.route('/api/danmaku', methods=['DELETE'])
-    def delete_danmaku():
         text = request.args.get('text')
-        mc = MongoClient()
-        mc.delete_danmaku(Constants.MONGO_COL_COMMON_DAMNAKU,text)
-        return '', 200, {'Content-Type': 'application/json'}
+        hot_only = request.args.get('hot_only')
 
+        redis = RedisClient()
 
-    @app.route('/api/rooms', methods=['POST'])
-    def add_danmaku_top_room():
-        data = request.get_json()
-        room_id = data['room_id']
+        kvs = redis.get_room_kvs(room)
+        data = []
+        for k, v in kvs.items():
+            v = json.loads(v)
+            if text is not None:
+                if text in v['text']:
+                    data.append(v)
+            else:
+                data.append(v)
 
-        mc = MongoClient()
-        mc.add_room(room_id)
+        if hot_only == 'true':
+            d = []
+            for v in data:
+                if v['is_hot'] == True:
+                    d.append(v)
+            data = d
 
-        cm = ClientManager([])
-        cm.add_room(room_id)
-        c = cm.room_clients_map[room_id]
-        c.add_handler('chatmsg', chatmsg_handler)
-        c.start()
+        data.sort(key=lambda x: x['count'], reverse=True)
+
+        return data[:int(topn)], 200, {'Content-Type': 'application/json'}
+
+    @app.route('/api/danmaku/<room>', methods=['PUT'])
+    def update_danmaku(room):
+        obj = request.get_json()
+
+        redis = RedisClient()
+
+        record = redis.get(obj['text'], room)
+        if record is None:
+            return {'msg': 'record not found'}, http.client.BAD_REQUEST, {
+                'Content-Type': 'application/json'}
+
+        redis.update_danmaku(room, obj['text'], obj)
         return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
-    @app.route('/api/danmaku_info', methods=['GET'])
-    def get_danmaku_info():
+    @app.route('/api/danmaku/<room>', methods=['DELETE'])
+    def delete_danmaku(room):
         text = request.args.get('text')
-        page_size = request.args.get('page_size', type=int, default=20)
-        page_num = request.args.get('page_num', type=int, default=1)
-        room_id = request.args.get('room_id')
-        col = request.args.get('col')
-        mongo = MongoClient()
-        data = []
-        if col is None:
-            return {'msg': 'please provide collection name'}, http.client.BAD_REQUEST, {
+
+        redis = RedisClient()
+
+        record = redis.get(text, room)
+        if record is None:
+            return {'msg': 'record not found'}, http.client.BAD_REQUEST, {
                 'Content-Type': 'application/json'}
 
-        if text is not None:
-            doc = mongo.find_one_by_text(Constants.MONGO_COL_DANMAKU_INFO, text)
-            if doc is not None:
-                doc.pop('_id', None)
-                data.append(doc)
-        else:
-            if room_id is None:
-                return {'msg': 'please provide room_id if no text'}, http.client.BAD_REQUEST, {
-                    'Content-Type': 'application/json'}
-            skip_docs = (page_num - 1) * page_size
-            docs = mongo.find_many(col, room_id, skip_docs, page_size)
-            for doc in docs:
-                doc.pop('_id', None)
-                data.append(doc)
-        count = mongo.get_col_count(col)
+        redis.delete_danmaku(room, text)
+        return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
-        return {"data": data, "total": count}, 200, {'Content-Type': 'application/json'}
-
-    @app.route('/api/archive_danmaku', methods=['POST'])
-    def archive_danmaku():
+    @app.route('/api/rooms', methods=['POST'])
+    def add_room_hanlder():
         data = request.get_json()
-        text = data['text']
-        room_id = data['room_id']
-
-        if text is None or room_id is None:
-            return {'msg': 'please provide text and room_id'}, http.client.BAD_REQUEST, {
-                'Content-Type': 'application/json'}
-
-        rc = RedisClient()
-        rc.delete(text, room_id)
+        room = data['room']
 
         mongo = MongoClient()
-        doc = mongo.find_one_by_text(Constants.MONGO_COL_DANMAKU_INFO, text)
-        if doc is not None:
-            mongo.archive_danmaku_info([text])
-        else:
-            return {'msg': 'text not found'}, http.client.BAD_REQUEST, {
-                'Content-Type': 'application/json'}
+        mongo.add_room(room)
 
+        cm = ClientManager([])
+        cm.add_room(room)
+        c = cm.room_clients_map[room]
+        c.add_handler('chatmsg', chatmsg_handler)
+        c.start()
         return {'msg': 'ok'}, 200, {'Content-Type': ''}

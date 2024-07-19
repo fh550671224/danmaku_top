@@ -22,12 +22,12 @@ def create_app():
     print("Performing initial setup...")
     config = ConfigHandler()
 
-    redis = RedisClient()
-    redis.start_cronjob()
-
     mongo = MongoClient()
-
     room_list = mongo.get_rooms()
+
+    redis = RedisClient()
+    redis.start_cronjob(room_list)
+
     cm = ClientManager(room_list)
     for key, value in cm.room_clients_map.items():
         value.add_handler('chatmsg', chatmsg_handler)
@@ -41,12 +41,12 @@ def create_app():
 if __name__ == '__main__':
     config = ConfigHandler()
 
-    redis = RedisClient()
-    redis.start_cronjob()
-
     mongo = MongoClient()
-
     room_list = mongo.get_rooms()
+
+    redis = RedisClient()
+    redis.start_cronjob(room_list)
+
     cm = ClientManager(room_list)
     for key, value in cm.room_clients_map.items():
         value.add_handler('chatmsg', chatmsg_handler)

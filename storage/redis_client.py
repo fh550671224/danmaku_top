@@ -1,3 +1,4 @@
+import json
 import threading
 import time
 
@@ -15,7 +16,6 @@ class RedisClient():
         if cls._instance is None:
             cls._instance = super(RedisClient, cls).__new__(cls, *args, **kwargs)
             try:
-                # TODO debug only
                 config = ConfigHandler()
                 if config.is_local_dev():
                     cls._instance.redis_connection = redis.Redis(host='localhost', port=6379, decode_responses=True)
@@ -31,70 +31,95 @@ class RedisClient():
     def get_redis_connection(self):
         return self._instance.redis_connection
 
-    def get(self, keyword):
+    def get(self, text, room):
         c = self.get_redis_connection()
         try:
-            return c.get(keyword)
+            q = f'{room}_{text}'
+            return c.get(q)
         except Exception as e:
-            print(f'Get Error: {e}')
+            print(f'Redis get Error: {e}')
 
-    def get_room_topn(self, room_id, topn):
+    def insert(self, obj):
         c = self.get_redis_connection()
         try:
-            return c.zrevrange(f'{Constants.REDIS_DANMAKU_RANKING}_{room_id}', 0, topn, withscores=True)
+            text = obj['text']
+            room = obj['room']
+            current_time = int(time.time())
+
+            key = f'{room}_{text}'
+
+            data = c.get(key)
+            if data is not None:
+                data_parsed = json.loads(data)
+                data_parsed['last_send_time'] = current_time
+                data_parsed['count'] = data_parsed['count'] + 1
+                dump = json.dumps(data_parsed)
+                c.set(key, dump)
+            else:
+                obj_dump = json.dumps(obj)
+                c.set(key, obj_dump)
+
         except Exception as e:
-            print(f'Get Error: {e}')
+            print(f'Redis insert Error: {e}')
 
-    def incr(self, keyword, room_id):
+    def get_room_kvs(self, room):
         c = self.get_redis_connection()
         try:
+            match = f'{room}_*'
+            keys = c.keys(match)
+
+            values = c.mget(keys)
+            kv_pairs = {key: value for key, value in zip(keys, values)}
+            return kv_pairs
+        except Exception as e:
+            print(f'Redis get_room_kvs Error: {e}')
+
+    def delete_danmaku(self, room, text):
+        c = self.get_redis_connection()
+        try:
+            key = f'{room}_{text}'
             pipe = c.pipeline(transaction=True)
-            pipe.zincrby(f'{Constants.REDIS_DANMAKU_RANKING}_{room_id}', 1, keyword)
+            pipe.delete(key)
             pipe.execute()
         except Exception as e:
-            print(f'Set Error: {e}')
+            print(f'Redis delete_danmaku Error: {e}')
 
-    def delete(self, keyword, room_id):
+    def update_danmaku(self, room, text, obj):
         c = self.get_redis_connection()
         try:
-            pipe = c.pipeline(transaction=True)
-            pipe.zrem(f'{Constants.REDIS_DANMAKU_RANKING}_{room_id}', keyword)
-            pipe.execute()
+            key = f'{room}_{text}'
+            c.set(key, json.dumps(obj))
         except Exception as e:
-            print(f'Delete Error: {e}')
+            print(f'Redis update_danmaku Error: {e}')
 
-    def get_all_keys(self):
-        c = self.get_redis_connection()
-        try:
-            return c.keys(f'{Constants.REDIS_DANMAKU_RANKING}_*')
-        except Exception as e:
-            print(f'Get Error: {e}')
-
-    def cron_clear(self):
-        def clear():
+    def cron_clear_danmaku(self, room):
+        def clear_danmaku(room):
             c = self.get_redis_connection()
             try:
+                kvs = self.get_room_kvs(room)
                 pipe = c.pipeline(transaction=True)
-                keys = self.get_all_keys()
-                value_list = []
-                for key in keys:
-                    tmp = c.zrangebyscore(key, '-inf', 10)
-                    value_list.extend(tmp)
-                    c.zremrangebyscore(key, '-inf', 10)
+                for key, value in kvs.items():
+                    value = json.loads(value)
+
+                    if value['count'] < 10:
+                        if value['count'] <= 3:
+                            pipe.delete(key)
+                        else:
+                            if not value['is_hot']:
+                                continue
+                            value['is_hot'] = False
+                            dump = json.dumps(value)
+                            pipe.set(key, dump)
                 pipe.execute()
 
-                # delete in mongo
-                if len(value_list) > 0:
-                    mongo = MongoClient()
-                    mongo.archive_danmaku_info(value_list)
-
             except Exception as e:
-                print(f'Cleared Error: {e}')
+                print(f'Redis cron_clear_danmaku Error: {e}')
 
         while True:
             time.sleep(10 * 60)
-            clear()
+            clear_danmaku(room)
 
-    def start_cronjob(self):
-        thread = threading.Thread(target=self.cron_clear, daemon=True)
-        thread.start()
+    def start_cronjob(self, room_list):
+        for room in room_list:
+            thread = threading.Thread(target=self.cron_clear_danmaku, args=(room,), daemon=True)
+            thread.start()
