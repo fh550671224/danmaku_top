@@ -70,18 +70,18 @@ def register_routers(app):
         redis.update_danmaku(room, obj['text'], obj)
         return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
-    @app.route('/api/danmaku/<room>', methods=['DELETE'])
-    def delete_danmaku(room):
-        text = request.args.get('text')
+    @app.route('/api/delete_danmaku', methods=['POST'])
+    def delete_danmaku():
+        obj = request.get_json()
 
         redis = RedisClient()
 
-        record = redis.get(text, room)
+        record = redis.get(obj['text'], obj['room'])
         if record is None:
             return {'msg': 'record not found'}, http.client.BAD_REQUEST, {
                 'Content-Type': 'application/json'}
 
-        redis.delete_danmaku(room, text)
+        redis.delete_danmaku(obj['room'], obj['text'])
         return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
     @app.route('/api/rooms', methods=['POST'])
