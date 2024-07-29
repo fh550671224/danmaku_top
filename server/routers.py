@@ -31,11 +31,12 @@ def register_routers(app):
 
     @app.route('/api/danmaku/<room>', methods=['GET'])
     def get_danmaku(room):
-        topn = request.args.get('n')
+        # topn = request.args.get('n')
         text = request.args.get('text')
-        hot_only = request.args.get('hot_only')
+        # hot_only = request.args.get('hot_only')
         trace_back_time = request.args.get('trace_back_time')
         author = request.args.get('author')
+        hot_first = request.args.get('hot_first')
 
         redis = RedisClient()
 
@@ -51,15 +52,19 @@ def register_routers(app):
         if text is not None:
             data = filter_danmaku_by_text(text, data)
 
-        if hot_only == 'true':
-            data = filter_danmaku_hot_only(data)
+        # if hot_only == 'true':
+        #     data = filter_danmaku_hot_only(data)
 
         if trace_back_time is not None:
             data = filter_danmaku_by_trace_back_time(int(trace_back_time), data)
 
         data.sort(key=lambda x: x['count'], reverse=True)
 
-        return data[:int(topn)], 200, {'Content-Type': 'application/json'}
+        if hot_first == 'true':
+            data.sort(key=lambda x: x['is_hot'], reverse=True)
+
+        # return data[:int(topn)], 200, {'Content-Type': 'application/json'}
+        return data, 200, {'Content-Type': 'application/json'}
 
     @app.route('/api/danmaku/<room>', methods=['PUT'])
     def update_danmaku(room):

@@ -33,3 +33,6 @@ def filter_danmaku_by_author(author, data):
         if author in v['first_author']:
             res.append(v)
     return res
+
+def sort_danmaku_by_hot(data):
+    return data.sort(key=lambda x: x[''])
