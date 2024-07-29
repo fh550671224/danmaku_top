@@ -10,7 +10,8 @@ from flask_cors import CORS
 from shared.constants import Constants
 from douyu.client_manager import ClientManager
 from .handlers import chatmsg_handler
-from .helper import filter_danmaku_by_text, filter_danmaku_hot_only, filter_danmaku_by_trace_back_time
+from .helper import filter_danmaku_by_text, filter_danmaku_hot_only, filter_danmaku_by_trace_back_time, \
+    filter_danmaku_by_author
 
 _app = Flask(__name__)
 CORS(_app)
@@ -34,6 +35,7 @@ def register_routers(app):
         text = request.args.get('text')
         hot_only = request.args.get('hot_only')
         trace_back_time = request.args.get('trace_back_time')
+        author = request.args.get('author')
 
         redis = RedisClient()
 
@@ -42,6 +44,9 @@ def register_routers(app):
         for k, v in kvs.items():
             v = json.loads(v)
             data.append(v)
+
+        if author is not None:
+            data = filter_danmaku_by_author(author, data)
 
         if text is not None:
             data = filter_danmaku_by_text(text, data)

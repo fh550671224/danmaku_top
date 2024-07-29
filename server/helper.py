@@ -25,3 +25,11 @@ def filter_danmaku_by_trace_back_time(trace_back_time, data):
         if v['create_time'] > trace_back_time:
             res.append(v)
     return res
+
+def filter_danmaku_by_author(author, data):
+    res = []
+
+    for v in data:
+        if author in v['first_author']:
+            res.append(v)
+    return res
