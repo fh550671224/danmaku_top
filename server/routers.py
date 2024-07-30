@@ -129,7 +129,7 @@ def register_routers(app):
         session_id = generate_hash(username)
         resp = make_response({'msg': 'ok'}, 200)
         resp.headers['Content-Type'] = 'application/json'
-        resp.set_cookie('session_id', session_id, max_age=30*60 ,secure=False, httponly=True, samesite='Lax')
+        resp.set_cookie('session_id', session_id, max_age=30*60)
 
         redis = RedisClient()
         s = redis.get_session(session_id)
@@ -154,7 +154,7 @@ def register_routers(app):
         session_id = generate_hash(username)
         resp = make_response({'msg': 'ok'}, 200)
         resp.headers['Content-Type'] = 'application/json'
-        resp.set_cookie('session_id', session_id, max_age=30*60 ,secure=False, httponly=True, samesite='Lax')
+        resp.set_cookie('session_id', session_id, max_age=30*60)
 
         redis = RedisClient()
         redis.insert_session(session_id, {'username': username})
