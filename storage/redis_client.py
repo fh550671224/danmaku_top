@@ -123,3 +123,20 @@ class RedisClient():
         for room in room_list:
             thread = threading.Thread(target=self.cron_clear_danmaku, args=(room,), daemon=True)
             thread.start()
+
+
+    def insert_session(self, session_id, value):
+        c = self.get_redis_connection()
+        try:
+            key = f'session_{session_id}'
+            c.set(key, json.dumps(value), ex=30*60)
+        except Exception as e:
+            print(f'Redis insert_session Error: {e}')
+
+    def get_session(self, session_id):
+        c = self.get_redis_connection()
+        try:
+            key = f'session_{session_id}'
+            return c.get(key)
+        except Exception as e:
+            print(f'Redis insert_session Error: {e}')

@@ -1,10 +1,13 @@
 import http.client
 import json
 
+import flask
+
 from config_handler.config_handler import ConfigHandler
+from shared.utils import generate_hash
 from storage.mongo_client import MongoClient
 from storage.redis_client import RedisClient
-from flask import Flask, request
+from flask import Flask, request, make_response
 from flask_cors import CORS
 
 from shared.constants import Constants
@@ -14,7 +17,7 @@ from .helper import filter_danmaku_by_text, filter_danmaku_hot_only, filter_danm
     filter_danmaku_by_author
 
 _app = Flask(__name__)
-CORS(_app)
+CORS(_app, supports_credentials=True)
 
 
 def register_routers(app):
@@ -108,3 +111,52 @@ def register_routers(app):
         c.add_handler('chatmsg', chatmsg_handler)
         c.start()
         return {'msg': 'ok'}, 200, {'Content-Type': ''}
+
+    @app.route('/api/login', methods=['POST'])
+    def login_hanlder():
+        data = request.get_json()
+        username = data['username']
+        password = data['password']
+
+        mongo = MongoClient()
+        user = mongo.get_user(username)
+        if user is None:
+            return {'msg': 'user not found'}, 200, {'Content-Type': 'application/json'}
+
+        if password != user['password']:
+            return {'msg': 'incorrect password'}, 200, {'Content-Type': 'application/json'}
+
+        session_id = generate_hash(username)
+        resp = make_response({'msg': 'ok'}, 200)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.set_cookie('session_id', session_id, max_age=30*60 ,secure=False, httponly=True, samesite='Lax')
+
+        redis = RedisClient()
+        s = redis.get_session(session_id)
+        if s is not None:
+            return resp
+
+        redis.insert_session(session_id, {'username': username})
+
+        return resp
+
+    @app.route('/api/register', methods=['POST'])
+    def register_hanlder():
+        data = request.get_json()
+        username = data['username']
+
+        mongo = MongoClient()
+        user = mongo.get_user(username)
+        if user is not None:
+            return {'msg': 'user already exists'}, 200, {'Content-Type': 'application/json'}
+        mongo.add_user(data)
+
+        session_id = generate_hash(username)
+        resp = make_response({'msg': 'ok'}, 200)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.set_cookie('session_id', session_id, max_age=30*60 ,secure=False, httponly=True, samesite='Lax')
+
+        redis = RedisClient()
+        redis.insert_session(session_id, {'username': username})
+
+        return resp

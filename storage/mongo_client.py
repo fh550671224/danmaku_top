@@ -30,55 +30,6 @@ class MongoClient:
         except Exception as e:
             print(f'mongo get_client Error: {e}')
 
-    def insert_danmaku(self, obj):
-        col = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
-        try:
-            col.insert_one(obj)
-
-        except Exception as e:
-            print(f'mongo insert_danmaku Error: {e}')
-
-    def insert_many(self, value_list):
-        col = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
-        try:
-            col.insert_many(value_list)
-            print(f'mongo insert_many Successful: {len(value_list)}')
-        except Exception as e:
-            print(f'mongo insert_many Error: {e}')
-
-    def find_one_danmaku(self, text, room):
-        col = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
-        try:
-            return col.find_one({'text': text, 'room': room})
-        except Exception as e:
-            print(f'mongo find_one_by_text Error: {e}')
-
-    def find_many_danmaku(self, room, skip_docs, page_size):
-        col = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
-        try:
-            query = {'room': room}
-            return col.find(query).skip(skip_docs).limit(page_size)
-        except Exception as e:
-            print(f'mongo find_many_danmaku Error: {e}')
-
-    def update_danmaku(self, obj):
-        col = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
-        try:
-            room = obj['room']
-            text = obj['text']
-            col.find_one_and_update({'room': room, 'text': text}, {'$set': obj}, upsert=True)
-        except Exception as e:
-            print(f'mongo update_danmaku Error: {e}')
-
-    def archive_danmaku(self, text_list):
-        col = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
-        try:
-            query = {'text': {'$in': text_list}}
-            col.update_many(query, {'$set': {'is_hot': False}})
-            print(f'archived {len(text_list)} danmakus')
-        except Exception as e:
-            print(f'mongo archive_danmaku Error: {e}')
-
     def get_rooms(self):
         col = self.get_client()[Constants.MONGO_COL_DANMAKU_ROOMS]
         try:
@@ -103,16 +54,19 @@ class MongoClient:
         except Exception as e:
             print(f'mongo add_room Error: {e}')
 
-    def get_danmaku_count(self, room):
-        col = self.get_client()[Constants.MONGO_COL_DANMAKU_INFO]
-        try:
-            return col.count_documents({'room': room})
-        except Exception as e:
-            print(f'mongo get_danmaku_count Error: {e}')
 
-    def delete_danmaku(self, collection, text):
-        col = self.get_client()[collection]
+    def add_user(self, obj):
+        col = self.get_client()[Constants.MONGO_COL_USERS]
         try:
-            return col.delete_one({'text': text})
+            data = col.insert_one(obj)
+            return data
         except Exception as e:
-            print(f'mongo delete_danmaku Error: {e}')
+            print(f'mongo get_user Error: {e}')
+
+    def get_user(self, username):
+        col = self.get_client()[Constants.MONGO_COL_USERS]
+        try:
+            data = col.find_one({'username':username})
+            return data
+        except Exception as e:
+            print(f'mongo get_user Error: {e}')
