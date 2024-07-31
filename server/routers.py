@@ -121,10 +121,10 @@ def register_routers(app):
         mongo = MongoClient()
         user = mongo.get_user(username)
         if user is None:
-            return {'msg': 'user not found'}, 200, {'Content-Type': 'application/json'}
+            return {'msg': 'user not found'}, 500, {'Content-Type': 'application/json'}
 
         if password != user['password']:
-            return {'msg': 'incorrect password'}, 200, {'Content-Type': 'application/json'}
+            return {'msg': 'incorrect password'}, 500, {'Content-Type': 'application/json'}
 
         session_id = generate_hash(username)
         resp = make_response({'msg': 'ok'}, 200)
@@ -148,7 +148,7 @@ def register_routers(app):
         mongo = MongoClient()
         user = mongo.get_user(username)
         if user is not None:
-            return {'msg': 'user already exists'}, 200, {'Content-Type': 'application/json'}
+            return {'msg': 'user already exists'}, 500, {'Content-Type': 'application/json'}
         mongo.add_user(data)
 
         session_id = generate_hash(username)
@@ -158,5 +158,25 @@ def register_routers(app):
 
         redis = RedisClient()
         redis.insert_session(session_id, {'username': username})
+
+        return resp
+
+    @app.route('/api/logout', methods=['POST'])
+    def logout_hanlder():
+        data = request.get_json()
+        username = data['username']
+
+        mongo = MongoClient()
+        user = mongo.get_user(username)
+        if user is not None:
+            return {'msg': 'user already exists'}, 500, {'Content-Type': 'application/json'}
+
+        session_id = generate_hash(username)
+        resp = make_response({'msg': 'ok'}, 200)
+        resp.headers['Content-Type'] = 'application/json'
+        resp.set_cookie('session_id', '', expires=0)
+
+        redis = RedisClient()
+        redis.delete_session(session_id)
 
         return resp

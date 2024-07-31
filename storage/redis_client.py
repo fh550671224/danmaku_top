@@ -140,3 +140,11 @@ class RedisClient():
             return c.get(key)
         except Exception as e:
             print(f'Redis insert_session Error: {e}')
+
+    def delete_session(self, session_id):
+        c = self.get_redis_connection()
+        try:
+            key = f'session_{session_id}'
+            c.delete(key)
+        except Exception as e:
+            print(f'Redis delete_session Error: {e}')
