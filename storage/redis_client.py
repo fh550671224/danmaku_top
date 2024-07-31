@@ -84,6 +84,17 @@ class RedisClient():
         except Exception as e:
             print(f'Redis delete_danmaku Error: {e}')
 
+    def delete_room_kvs(self, room):
+        c = self.get_redis_connection()
+        try:
+            key = f'{room}_*'
+            keys = c.keys(key)
+            if keys:
+                c.delete(*keys)
+                print(f'Deleted {len(keys)}')
+        except Exception as e:
+            print(f'Redis delete_room_kvs Error: {e}')
+
     def update_danmaku(self, room, text, obj):
         c = self.get_redis_connection()
         try:

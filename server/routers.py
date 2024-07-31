@@ -1,3 +1,4 @@
+import asyncio
 import http.client
 import json
 
@@ -105,8 +106,8 @@ def register_routers(app):
 
     @app.route('/api/rooms', methods=['POST'])
     def add_room_hanlder():
-        if not check_auth(request.cookies):
-            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+        # if not check_auth(request.cookies):
+        #     return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
 
         data = request.get_json()
 
@@ -123,8 +124,8 @@ def register_routers(app):
 
     @app.route('/api/rooms', methods=['DELETE'])
     def delete_room_hanlder():
-        if not check_auth(request.cookies):
-            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+        # if not check_auth(request.cookies):
+        #     return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
 
         room = request.args.get('room')
 
@@ -135,6 +136,9 @@ def register_routers(app):
         c = cm.room_clients_map[room]
         c.stop()
         cm.delete_room(room)
+
+        redis = RedisClient()
+        redis.delete_room_kvs(room)
         return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
     @app.route('/api/login', methods=['POST'])
