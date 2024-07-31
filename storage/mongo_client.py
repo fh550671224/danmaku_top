@@ -33,11 +33,6 @@ class MongoClient:
     def get_rooms(self):
         col = self.get_client()[Constants.MONGO_COL_DANMAKU_ROOMS]
         try:
-            # TODO temporaily use this to delete old data
-            todo = col.find_one({'name': 'room_list'})
-            if todo is not None:
-                col.delete_one({'name': 'room_list'})
-
             res = []
             for room in col.find({},{'_id':False}):
                 res.append(room)
