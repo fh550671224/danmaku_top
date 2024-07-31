@@ -14,7 +14,7 @@ from shared.constants import Constants
 from douyu.client_manager import ClientManager
 from .handlers import chatmsg_handler
 from .helper import filter_danmaku_by_text, filter_danmaku_hot_only, filter_danmaku_by_trace_back_time, \
-    filter_danmaku_by_author
+    filter_danmaku_by_author, check_auth
 
 _app = Flask(__name__)
 CORS(_app, supports_credentials=True)
@@ -24,13 +24,6 @@ def register_routers(app):
     @app.route('/')
     def home():
         return 'Hello, Flask!'
-
-    @app.route('/api/rooms', methods=['GET'])
-    def get_danmaku_top():
-        mc = MongoClient()
-        room_list = mc.get_rooms()
-        return {"data": room_list, "total": len(room_list), "msg": "ok"}, 200, {
-            'Content-Type': 'application/json'}  # 返回JSON响应
 
     @app.route('/api/danmaku/<room>', methods=['GET'])
     def get_danmaku(room):
@@ -71,6 +64,9 @@ def register_routers(app):
 
     @app.route('/api/danmaku/<room>', methods=['PUT'])
     def update_danmaku(room):
+        if not check_auth(request.cookies):
+            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+
         obj = request.get_json()
 
         redis = RedisClient()
@@ -85,6 +81,9 @@ def register_routers(app):
 
     @app.route('/api/delete_danmaku', methods=['POST'])
     def delete_danmaku():
+        if not check_auth(request.cookies):
+            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+
         obj = request.get_json()
 
         redis = RedisClient()
@@ -97,19 +96,45 @@ def register_routers(app):
         redis.delete_danmaku(obj['room'], obj['text'])
         return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
+    @app.route('/api/rooms', methods=['GET'])
+    def get_room_handler():
+        mc = MongoClient()
+        room_list = mc.get_rooms()
+        return {"data": room_list, "total": len(room_list), "msg": "ok"}, 200, {
+            'Content-Type': 'application/json'}  # 返回JSON响应
+
     @app.route('/api/rooms', methods=['POST'])
     def add_room_hanlder():
+        if not check_auth(request.cookies):
+            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+
         data = request.get_json()
-        room = data['room']
 
         mongo = MongoClient()
-        mongo.add_room(room)
+        mongo.add_room(data)
 
         cm = ClientManager([])
-        cm.add_room(room)
-        c = cm.room_clients_map[room]
+
+        cm.add_room(data['room'])
+        c = cm.room_clients_map[data['room']]
         c.add_handler('chatmsg', chatmsg_handler)
         c.start()
+        return {'msg': 'ok'}, 200, {'Content-Type': ''}
+
+    @app.route('/api/rooms', methods=['DELETE'])
+    def delete_room_hanlder():
+        if not check_auth(request.cookies):
+            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+
+        room = request.args.get('room')
+
+        mongo = MongoClient()
+        mongo.delete_room(room)
+
+        cm = ClientManager([])
+        c = cm.room_clients_map[room]
+        c.stop()
+        cm.delete_room(room)
         return {'msg': 'ok'}, 200, {'Content-Type': ''}
 
     @app.route('/api/login', methods=['POST'])
@@ -129,7 +154,7 @@ def register_routers(app):
         session_id = generate_hash(username)
         resp = make_response({'msg': 'ok'}, 200)
         resp.headers['Content-Type'] = 'application/json'
-        resp.set_cookie('session_id', session_id, max_age=30*60)
+        resp.set_cookie('session_id', session_id, max_age=30 * 60)
 
         redis = RedisClient()
         s = redis.get_session(session_id)
@@ -154,7 +179,7 @@ def register_routers(app):
         session_id = generate_hash(username)
         resp = make_response({'msg': 'ok'}, 200)
         resp.headers['Content-Type'] = 'application/json'
-        resp.set_cookie('session_id', session_id, max_age=30*60)
+        resp.set_cookie('session_id', session_id, max_age=30 * 60)
 
         redis = RedisClient()
         redis.insert_session(session_id, {'username': username})
@@ -163,6 +188,9 @@ def register_routers(app):
 
     @app.route('/api/logout', methods=['POST'])
     def logout_hanlder():
+        if not check_auth(request.cookies):
+            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+
         data = request.get_json()
         username = data['username']
 

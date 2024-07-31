@@ -121,7 +121,7 @@ class RedisClient():
 
     def start_cronjob(self, room_list):
         for room in room_list:
-            thread = threading.Thread(target=self.cron_clear_danmaku, args=(room,), daemon=True)
+            thread = threading.Thread(target=self.cron_clear_danmaku, args=(room['room'],), daemon=True)
             thread.start()
 
 
@@ -137,7 +137,7 @@ class RedisClient():
         c = self.get_redis_connection()
         try:
             key = f'session_{session_id}'
-            return c.get(key)
+            return json.loads(c.get(key))
         except Exception as e:
             print(f'Redis insert_session Error: {e}')
 

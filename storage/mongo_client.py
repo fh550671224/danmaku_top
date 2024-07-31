@@ -2,7 +2,7 @@ import pymongo
 
 from shared.constants import Constants
 from config_handler.config_handler import ConfigHandler
-
+from bson.json_util import dumps
 
 class MongoClient:
     _instance = None
@@ -33,24 +33,29 @@ class MongoClient:
     def get_rooms(self):
         col = self.get_client()[Constants.MONGO_COL_DANMAKU_ROOMS]
         try:
-            query = {'name': 'room_list'}
-            data = col.find_one(query)
-            if data is None:
-                return []
-            else:
-                rooms = data['rooms']
-                return rooms
+            # TODO temporaily use this to delete old data
+            todo = col.find_one({'name': 'room_list'})
+            if todo is not None:
+                col.delete_one({'name': 'room_list'})
+
+            res = []
+            for room in col.find({},{'_id':False}):
+                res.append(room)
+            return res
         except Exception as e:
             print(f'mongo get_rooms Error: {e}')
 
-    def add_room(self, room):
+    def add_room(self, obj):
         col = self.get_client()['danmaku_rooms']
         try:
-            data = col.find_one({'name': 'room_list'})
-            if data is None:
-                col.insert_one({'name': 'room_list', 'rooms': [room]})
-            else:
-                col.update_one({'name': 'room_list'}, {'$push': {'rooms': room}})
+            col.insert_one(obj)
+        except Exception as e:
+            print(f'mongo add_room Error: {e}')
+
+    def delete_room(self, room):
+        col = self.get_client()['danmaku_rooms']
+        try:
+            col.delete_one({'room': room})
         except Exception as e:
             print(f'mongo add_room Error: {e}')
 
