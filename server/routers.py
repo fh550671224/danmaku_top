@@ -106,8 +106,8 @@ def register_routers(app):
 
     @app.route('/api/rooms', methods=['POST'])
     def add_room_hanlder():
-        # if not check_auth(request.cookies):
-        #     return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+        if not check_auth(request.cookies):
+            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
 
         data = request.get_json()
 
@@ -124,8 +124,8 @@ def register_routers(app):
 
     @app.route('/api/rooms', methods=['DELETE'])
     def delete_room_hanlder():
-        # if not check_auth(request.cookies):
-        #     return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+        if not check_auth(request.cookies):
+            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
 
         room = request.args.get('room')
 
