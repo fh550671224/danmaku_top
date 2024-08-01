@@ -192,8 +192,8 @@ def register_routers(app):
 
     @app.route('/api/logout', methods=['POST'])
     def logout_hanlder():
-        if not check_auth(request.cookies):
-            return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
+        # if not check_auth(request.cookies):
+        #     return {'msg': 'not authorized'}, 403, {'Content-Type': 'application/json'}
 
         data = request.get_json()
         username = data['username']
