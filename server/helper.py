@@ -21,11 +21,11 @@ def filter_danmaku_hot_only(data):
     return res
 
 
-def filter_danmaku_by_trace_back_time(trace_back_time, data):
+def filter_danmaku_by_start_time(start_time, data):
     res = []
 
     for v in data:
-        if v['create_time'] > trace_back_time:
+        if v['create_time'] > start_time:
             res.append(v)
     return res
 

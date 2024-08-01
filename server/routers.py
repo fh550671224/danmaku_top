@@ -1,6 +1,7 @@
 import asyncio
 import http.client
 import json
+import time
 
 import flask
 
@@ -14,7 +15,7 @@ from flask_cors import CORS
 from shared.constants import Constants
 from douyu.client_manager import ClientManager
 from .handlers import chatmsg_handler
-from .helper import filter_danmaku_by_text, filter_danmaku_hot_only, filter_danmaku_by_trace_back_time, \
+from .helper import filter_danmaku_by_text, filter_danmaku_hot_only, filter_danmaku_by_start_time, \
     filter_danmaku_by_author, check_auth
 
 _app = Flask(__name__)
@@ -52,8 +53,9 @@ def register_routers(app):
         # if hot_only == 'true':
         #     data = filter_danmaku_hot_only(data)
 
-        if trace_back_time is not None:
-            data = filter_danmaku_by_trace_back_time(int(trace_back_time), data)
+        if trace_back_time is not None and int(trace_back_time) is not 0:
+            start_time = int(time.time()) - int(trace_back_time)
+            data = filter_danmaku_by_start_time(start_time, data)
 
         data.sort(key=lambda x: x['count'], reverse=True)
 
