@@ -4,7 +4,9 @@ This is an ongoing project that collects chat data from Douyu streaming channels
 
 ## Features
 Live Chat Data Collection: Continuously collects chat messages from Douyu channels.
+
 Statistical Analysis: Calculates metrics such as message frequency, top users, common keywords, and other insights.
+
 Web Interface: Displays the statistics in real time through a user-friendly web interface.
 
 ## Demo
