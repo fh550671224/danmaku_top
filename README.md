@@ -9,6 +9,9 @@ Statistical Analysis: Calculates metrics such as message frequency, top users, c
 
 Web Interface: Displays the statistics in real time through a user-friendly web interface.
 
+## Front End Repo
+https://github.com/fh550671224/danmaku_top_frontend
+
 ## Demo
 https://sp1rit.me/room
 
